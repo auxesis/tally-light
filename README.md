@@ -1,0 +1,192 @@
+# tally-light
+
+Turns a Philips Hue lamp red while your webcam is in use, and green when it isn't, so the people around you know when you're on a call.
+
+It's a single binary for macOS that runs in the background as a system service. It doesn't need a terminal open, and it has no runtime dependencies.
+
+## How it works
+
+- **Watching the camera.** tally-light asks macOS (through CoreMediaIO) whether a named camera is in use. It works with any camera macOS knows about: USB webcams, the built-in camera, or Continuity Camera. Only the camera you configure affects the lamp, so a desk webcam doubles as an "I'm at my desk" signal.
+- **Setting the lamp.** It talks to the Hue bridge directly over its local HTTP API.
+- **Running in the background.** It runs as a LaunchDaemon that launchd starts as your user account. See [Why a LaunchDaemon?](#why-a-launchdaemon) below.
+
+| Event | Lamp |
+|---|---|
+| Service starts | purple |
+| Camera in use | red |
+| Camera not in use, or unplugged | green |
+| Mac about to sleep | green |
+| Service stops | yellow |
+
+If the bridge can't be reached, for example because you're away from home, the change is skipped and logged once. tally-light keeps running and catches up when the bridge comes back.
+
+## Requirements
+
+- macOS on Apple Silicon. Developed on macOS 26.
+- A Philips Hue bridge on your local network, plus a bridge username (see below).
+- A real user account to run the service as. It has been tested with an admin account. The system account `nobody` sees no cameras, and a standard (non-admin) account hasn't been tested yet.
+- To build it: Go 1.26 and the Xcode Command Line Tools (cgo is used to call macOS frameworks).
+
+## Install
+
+1. Build or install the binary:
+
+   ```sh
+   go install github.com/auxesis/tally-light@latest
+   ```
+
+   Or from a checkout:
+
+   ```sh
+   go build -o tally-light .
+   ```
+
+2. Find the name of your camera:
+
+   ```sh
+   tally-light list-cameras
+   ```
+
+   ```
+   Logitech StreamCam	0x222000046d0893	not in use
+   MacBook Air Camera	6C707041-05AC-0011-0004-000000000001	not in use
+   ```
+
+3. Write the config file at `~/.config/tally-light/config.toml` (see [Configuration](#configuration)).
+
+4. Install and start the service:
+
+   ```sh
+   sudo tally-light install
+   ```
+
+   This copies the binary to `/usr/local/bin/tally-light`, writes `/Library/LaunchDaemons/com.auxesis.tally-light.plist` to run it as the user who ran `sudo`, and starts it. The config is checked first, and `install` refuses to continue if it's invalid.
+
+   The lamp should turn purple, then green.
+
+## Configuration
+
+`~/.config/tally-light/config.toml`:
+
+```toml
+# Camera to watch, as shown by `tally-light list-cameras`.
+camera = "Logitech StreamCam"
+
+# Optional: match on the camera's unique ID instead of its name, e.g. if you
+# have two cameras with the same name.
+# camera_uid = "0x222000046d0893"
+
+# Ignore camera changes before this hour (local time). 0 disables. Default 7.
+# active_from_hour = 7
+
+[bridge]
+host = "192.168.1.2"
+username = "your-bridge-username"
+
+[light]
+id = 16            # from the Hue app, or GET /api/<username>/lights
+# brightness = 220 # 1-254
+
+# Optional. Supported colours: red, yellow, green, purple.
+# [colours]
+# starting = "purple"
+# in_use = "red"
+# not_in_use = "green"
+# stopped = "yellow"
+```
+
+Keep the file readable only by you (`chmod 600`), because the bridge username works as a password.
+
+The service reads the config when it starts. After editing it, restart the service:
+
+```sh
+sudo launchctl kickstart -k system/com.auxesis.tally-light
+```
+
+### Getting a bridge username
+
+1. Press the link button on the bridge.
+2. Within 30 seconds, run:
+
+   ```sh
+   curl -X POST -d '{"devicetype":"tally-light"}' http://<bridge-ip>/api
+   ```
+
+3. The response contains `"username": "..."`. Put that value in the config.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `tally-light run [-config path]` | Run in the foreground. This is what the service runs. |
+| `tally-light list-cameras` | List cameras with their unique IDs and whether each is in use. |
+| `sudo tally-light install` | Install the binary and the service, and start it. |
+| `sudo tally-light uninstall` | Stop the service and remove the binary and its service file. |
+| `tally-light version` | Print the version. |
+
+## Logs and troubleshooting
+
+Logs go to `~/Library/Logs/tally-light.log`:
+
+```
+2026/10/27 15:52:58 tally-light dev watching camera "Logitech StreamCam"
+2026/10/27 15:52:58 starting
+2026/10/27 15:52:58 camera not in use
+```
+
+Check the service is running, and as which user:
+
+```sh
+launchctl print system/com.auxesis.tally-light | grep -E 'state|username|last exit'
+```
+
+Common problems:
+
+- **The lamp never changes, and the log shows `lamp update failed: ... no route to host`.**
+  - Check `bridge.host`.
+  - If you've installed it some other way, as a LaunchAgent in `~/Library/LaunchAgents`, macOS blocks it from your local network. Use `sudo tally-light install`.
+- **The camera is never seen as in use.**
+  - Compare the `camera` setting with `tally-light list-cameras`. Names must match exactly.
+  - The service must run as a real user account (tested with an admin account), not a system account like `nobody`.
+- **The lamp stays purple in the morning.** Camera changes before `active_from_hour` are ignored.
+
+## Why a LaunchDaemon?
+
+These were tested on macOS 26 while designing the tool. Each row was tested directly.
+
+| Runs as | Reaches Hue bridge | Sees camera state |
+|---|---|---|
+| LaunchAgent, any binary | No: blocked by Local Network privacy | — |
+| LaunchDaemon with `UserName` = an admin user | Yes | Yes |
+| LaunchDaemon with `UserName` = `nobody` | Yes | No |
+
+Since macOS 15, Local Network privacy blocks background programs started from a LaunchAgent from reaching devices on your network. A plain command-line binary can't be listed under System Settings → Privacy & Security → Local Network, so there's nothing to approve. LaunchDaemons aren't subject to this.
+
+tally-light never runs as root. launchd starts it as your user account.
+
+## Uninstall
+
+```sh
+sudo tally-light uninstall
+rm -r ~/.config/tally-light ~/Library/Logs/tally-light.log
+```
+
+The lamp is left yellow.
+
+## Development
+
+```sh
+go test ./...
+TALLY_MANUAL=1 go test ./internal/camera/ -run TestWatchSeesCameraUse -v  # then open Photo Booth
+```
+
+| Package | Purpose |
+|---|---|
+| `internal/tally` | Decides the lamp colour (pure Go, fully unit-tested) |
+| `internal/camera` | CoreMediaIO camera list and change notifications (cgo) |
+| `internal/power` | Sleep/wake notifications (cgo) |
+| `internal/hue` | Hue bridge client |
+| `internal/config` | Config loading and validation |
+| `internal/service` | LaunchDaemon install and uninstall |
+
+The design and implementation plan are in `docs/superpowers/`.
