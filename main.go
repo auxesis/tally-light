@@ -4,6 +4,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/auxesis/tally-light/internal/camera"
 )
 
 const version = "dev"
@@ -16,6 +18,8 @@ func main() {
 	switch os.Args[1] {
 	case "version":
 		fmt.Println("tally-light " + version)
+	case "list-cameras":
+		listCameras()
 	default:
 		usage()
 		os.Exit(2)
@@ -23,5 +27,20 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: tally-light <version>")
+	fmt.Fprintln(os.Stderr, "usage: tally-light <list-cameras|version>")
+}
+
+func listCameras() {
+	cams, err := camera.List()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	for _, c := range cams {
+		state := "not in use"
+		if c.InUse {
+			state = "in use"
+		}
+		fmt.Printf("%s\t%s\t%s\n", c.Name, c.UID, state)
+	}
 }
