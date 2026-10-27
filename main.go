@@ -20,6 +20,8 @@ func main() {
 		fmt.Println("tally-light " + version)
 	case "list-cameras":
 		listCameras()
+	case "run":
+		run(os.Args[2:])
 	default:
 		usage()
 		os.Exit(2)
@@ -27,7 +29,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: tally-light <list-cameras|version>")
+	fmt.Fprintln(os.Stderr, "usage: tally-light <run|list-cameras|version>")
 }
 
 func listCameras() {
