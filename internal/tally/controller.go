@@ -62,7 +62,12 @@ func (c *Controller) Observe(ctx context.Context, cams []camera.Camera) {
 	c.send(ctx, want, msg)
 }
 
+// Sleep shows not-in-use before the Mac sleeps, unless the lamp already
+// shows it: dark wakes cause repeated sleeps overnight.
 func (c *Controller) Sleep(ctx context.Context) {
+	if c.sent != nil && *c.sent == c.colours.NotInUse && !c.failed {
+		return
+	}
 	c.send(ctx, c.colours.NotInUse, "going to sleep")
 }
 

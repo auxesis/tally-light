@@ -156,3 +156,12 @@ func TestStopSetsStopped(t *testing.T) {
 	newController(lamp, "", 7, at(10, 0), nil).Stop(ctx)
 	assertSent(t, lamp, yellow)
 }
+
+func TestSleepWhenAlreadyNotInUseSendsNothing(t *testing.T) {
+	lamp := &fakeLamp{}
+	c := newController(lamp, "", 7, at(10, 0), nil)
+	c.Observe(ctx, nil)
+	c.Sleep(ctx)
+	c.Sleep(ctx)
+	assertSent(t, lamp, green)
+}
