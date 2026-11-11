@@ -199,7 +199,3 @@ The lamp is left yellow.
 ## Development
 
 See [DEVELOPMENT.md](DEVELOPMENT.md).
-
-## License
-
-MIT. See [LICENSE.md](LICENSE.md).
