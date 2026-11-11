@@ -1,0 +1,74 @@
+name: Tests
+
+# Both jobs run on macOS: the camera and power packages call macOS frameworks
+# through cgo, so they neither build nor type-check on Linux.
+#
+#   test  go vet and the unit tests. Tests that need a real camera skip under
+#         CI (GitHub sets CI=true) or need TALLY_MANUAL=1.
+#   lint  golangci-lint; config in .golangci.yaml.
+#
+# Tool versions come from .mise.toml, the same pins used locally.
+
+on:
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - docs/**
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - docs/**
+  workflow_dispatch: {}
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
+        with:
+          version: 2026.4.0
+          install: true
+          install_args: go
+          cache: true
+          cache_key_prefix: mise-v1-macos
+
+      - name: Test
+        run: mise run test
+
+  lint:
+    name: Lint
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
+        with:
+          version: 2026.4.0
+          install: true
+          install_args: go golangci-lint
+          cache: true
+          cache_key_prefix: mise-v1-macos
+
+      - name: golangci-lint
+        run: mise run lint

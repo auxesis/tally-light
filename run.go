@@ -22,7 +22,7 @@ const pollInterval = 2 * time.Second
 func run(args []string) {
 	fs := flag.NewFlagSet("run", flag.ExitOnError)
 	path := fs.String("config", config.DefaultPath(os.Getenv("HOME")), "config file")
-	fs.Parse(args)
+	_ = fs.Parse(args) // ExitOnError: Parse exits rather than returning an error
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 
 	// Validate before touching the lamp, so a bad config under launchd's
@@ -40,7 +40,7 @@ func run(args []string) {
 	lamp := hue.Light{
 		Client:     hue.NewClient(cfg.Bridge.Host, cfg.Bridge.Username),
 		ID:         cfg.Light.ID,
-		Brightness: uint8(cfg.Light.Brightness),
+		Brightness: uint8(cfg.Light.Brightness), //nolint:gosec // config.Load checks it is 1-254
 	}
 	ctrl := tally.New(lamp, tally.Colours{
 		Starting: colour(cfg.Colours.Starting),

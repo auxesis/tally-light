@@ -83,7 +83,9 @@ func (c *Client) SetLight(ctx context.Context, id int, col Colour, bri uint8) er
 			var e struct {
 				Description string `json:"description"`
 			}
-			json.Unmarshal(raw, &e)
+			if err := json.Unmarshal(raw, &e); err != nil || e.Description == "" {
+				return fmt.Errorf("hue bridge: %s", raw)
+			}
 			return fmt.Errorf("hue bridge: %s", e.Description)
 		}
 	}

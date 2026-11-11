@@ -180,7 +180,8 @@ The lamp is left yellow.
 ## Development
 
 ```sh
-go test ./...
+mise run test   # go vet and unit tests
+mise run lint   # golangci-lint
 TALLY_MANUAL=1 go test ./internal/camera/ -run TestWatchSeesCameraUse -v  # then open Photo Booth
 ```
 
@@ -192,5 +193,7 @@ TALLY_MANUAL=1 go test ./internal/camera/ -run TestWatchSeesCameraUse -v  # then
 | `internal/hue` | Hue bridge client |
 | `internal/config` | Config loading and validation |
 | `internal/service` | LaunchDaemon install and uninstall |
+
+CI (`.github/workflows/tests.yml`) runs `mise run test` and `mise run lint` on macOS.
 
 The design and implementation plan are in `docs/superpowers/`.

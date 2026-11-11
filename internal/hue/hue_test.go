@@ -38,12 +38,16 @@ func TestSetLightSendsState(t *testing.T) {
 		}
 		body, _ := io.ReadAll(r.Body)
 		var got, want map[string]any
-		json.Unmarshal(body, &got)
-		json.Unmarshal([]byte(`{"on":true,"hue":0,"sat":254,"bri":220}`), &want)
+		if err := json.Unmarshal(body, &got); err != nil {
+			t.Errorf("body %s: %v", body, err)
+		}
+		if err := json.Unmarshal([]byte(`{"on":true,"hue":0,"sat":254,"bri":220}`), &want); err != nil {
+			t.Fatal(err)
+		}
 		if gb, _ := json.Marshal(got); string(gb) != mustMarshal(want) {
 			t.Errorf("body = %s", body)
 		}
-		w.Write([]byte(`[{"success":{}}]`))
+		_, _ = w.Write([]byte(`[{"success":{}}]`))
 	}))
 	defer srv.Close()
 
@@ -55,13 +59,25 @@ func TestSetLightSendsState(t *testing.T) {
 
 func TestSetLightBridgeError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`[{"error":{"type":3,"description":"resource, /lights/99, not available"}}]`))
+		_, _ = w.Write([]byte(`[{"error":{"type":3,"description":"resource, /lights/99, not available"}}]`))
 	}))
 	defer srv.Close()
 
 	err := NewClient(srv.Listener.Addr().String(), "abc").SetLight(context.Background(), 99, Colour{0, 254}, 220)
 	if err == nil || !strings.Contains(err.Error(), "not available") {
 		t.Fatalf("want bridge error, got %v", err)
+	}
+}
+
+func TestSetLightUnparsableBridgeError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`[{"error":"something odd"}]`))
+	}))
+	defer srv.Close()
+
+	err := NewClient(srv.Listener.Addr().String(), "abc").SetLight(context.Background(), 16, Colour{0, 254}, 220)
+	if err == nil || !strings.Contains(err.Error(), "something odd") {
+		t.Fatalf("want error showing the raw bridge error, got %v", err)
 	}
 }
 

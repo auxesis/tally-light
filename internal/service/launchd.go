@@ -59,7 +59,7 @@ func Plist(user, home string) []byte {
 
 func esc(s string) string {
 	var b bytes.Buffer
-	xml.EscapeText(&b, []byte(s))
+	_ = xml.EscapeText(&b, []byte(s)) // writes to a bytes.Buffer never fail
 	return b.String()
 }
 
@@ -72,7 +72,8 @@ func Install(self, user, home string) error {
 	if err := writeRootFile(PlistPath, Plist(user, home), 0o644); err != nil {
 		return fmt.Errorf("writing %s: %w", PlistPath, err)
 	}
-	exec.Command("launchctl", "bootout", "system/"+Label).Run()
+	// Fails when the service isn't loaded yet, which is fine.
+	_ = exec.Command("launchctl", "bootout", "system/"+Label).Run()
 
 	// bootout finishes asynchronously; bootstrap can fail briefly after it.
 	var out []byte
@@ -89,7 +90,8 @@ func Install(self, user, home string) error {
 
 // Uninstall stops the service and removes its files.
 func Uninstall() error {
-	exec.Command("launchctl", "bootout", "system/"+Label).Run()
+	// Fails when the service isn't loaded, which is fine.
+	_ = exec.Command("launchctl", "bootout", "system/"+Label).Run()
 	for _, p := range []string{PlistPath, BinPath} {
 		if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
 			return err
@@ -99,7 +101,7 @@ func Uninstall() error {
 }
 
 func copyBinary(src, dst string) error {
-	in, err := os.Open(src)
+	in, err := os.Open(src) //nolint:gosec // src is this program's own executable
 	if err != nil {
 		return err
 	}
@@ -108,7 +110,7 @@ func copyBinary(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil { //nolint:gosec // /usr/local/bin must be readable by every user
 		return err
 	}
 	return writeRootFile(dst, data, 0o755)
