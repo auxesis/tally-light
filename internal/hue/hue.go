@@ -6,8 +6,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -52,13 +54,19 @@ func (c *Client) SetLight(ctx context.Context, id int, col Colour, bri uint8) er
 	if err != nil {
 		return err
 	}
-	url := fmt.Sprintf("http://%s/api/%s/lights/%d/state", c.Host, c.Username, id)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(body))
+	path := fmt.Sprintf("/lights/%d/state", id)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, "http://"+c.Host+"/api/"+c.Username+path, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
+		// The username is a credential and errors end up in the log, so
+		// replace the URL net/http puts in the error with one without it.
+		var ue *url.Error
+		if errors.As(err, &ue) {
+			ue.URL = "http://" + c.Host + "/api/<username>" + path
+		}
 		return err
 	}
 	defer resp.Body.Close()

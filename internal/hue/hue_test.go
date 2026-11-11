@@ -75,6 +75,24 @@ func TestSetLightUnreachable(t *testing.T) {
 	}
 }
 
+func TestSetLightErrorHidesUsername(t *testing.T) {
+	srv := httptest.NewServer(http.NotFoundHandler())
+	addr := srv.Listener.Addr().String()
+	srv.Close()
+
+	const username = "s3cret-bridge-user"
+	err := NewClient(addr, username).SetLight(context.Background(), 16, Colour{0, 254}, 220)
+	if err == nil {
+		t.Fatal("want error for unreachable bridge")
+	}
+	if strings.Contains(err.Error(), username) {
+		t.Errorf("error contains bridge username: %v", err)
+	}
+	if !strings.Contains(err.Error(), addr) {
+		t.Errorf("error should still name the bridge address: %v", err)
+	}
+}
+
 func mustMarshal(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)

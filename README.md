@@ -52,6 +52,8 @@ If the bridge can't be reached, for example because you're away from home, the c
    MacBook Air Camera	6C707041-05AC-0011-0004-000000000001	not in use
    ```
 
+   Use the name (first column) in the config. The unique ID (second column) of a USB camera changes when you plug it into a different port.
+
 3. Write the config file at `~/.config/tally-light/config.toml` (see [Configuration](#configuration)).
 
 4. Install and start the service:
@@ -72,8 +74,9 @@ If the bridge can't be reached, for example because you're away from home, the c
 # Camera to watch, as shown by `tally-light list-cameras`.
 camera = "Logitech StreamCam"
 
-# Optional: match on the camera's unique ID instead of its name, e.g. if you
-# have two cameras with the same name.
+# Optional: match on the camera's unique ID instead of its name. Prefer the
+# name: USB cameras get a different ID when plugged into a different port.
+# Only use an ID to tell apart two cameras with the same name.
 # camera_uid = "0x222000046d0893"
 
 # Ignore camera changes before this hour (local time). 0 disables. Default 7.
@@ -147,6 +150,7 @@ Common problems:
   - If you've installed it some other way, as a LaunchAgent in `~/Library/LaunchAgents`, macOS blocks it from your local network. Use `sudo tally-light install`.
 - **The camera is never seen as in use.**
   - Compare the `camera` setting with `tally-light list-cameras`. Names must match exactly.
+  - If you set `camera_uid` for a USB camera, it may have changed after moving the camera to another port. Switch to `camera` (the name).
   - The service must run as a real user account (tested with an admin account), not a system account like `nobody`.
 - **The lamp stays purple in the morning.** Camera changes before `active_from_hour` are ignored.
 
