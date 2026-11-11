@@ -11,7 +11,8 @@ import (
 	"github.com/auxesis/tally-light/internal/service"
 )
 
-const version = "dev"
+// version is set at build time with -ldflags "-X main.version=...".
+var version = "dev"
 
 func main() {
 	if len(os.Args) < 2 {

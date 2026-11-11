@@ -29,7 +29,16 @@ If the bridge can't be reached, for example because you're away from home, the c
 
 ## Install
 
-1. Build or install the binary:
+1. Download the latest release:
+
+   ```sh
+   curl -fsSLO https://github.com/auxesis/tally-light/releases/latest/download/tally-light-darwin-arm64.tar.gz
+   tar -xzf tally-light-darwin-arm64.tar.gz
+   ```
+
+   The binary isn't signed by an Apple developer account. Downloading with `curl` as above works. If you download it in a browser instead, macOS will refuse to run it until you clear the quarantine flag: `xattr -d com.apple.quarantine tally-light`.
+
+   Or install with Go:
 
    ```sh
    go install github.com/auxesis/tally-light@latest
@@ -195,5 +204,11 @@ TALLY_MANUAL=1 go test ./internal/camera/ -run TestWatchSeesCameraUse -v  # then
 | `internal/service` | LaunchDaemon install and uninstall |
 
 CI (`.github/workflows/tests.yml`) runs `mise run test` and `mise run lint` on macOS.
+
+To release, push a version tag. `.github/workflows/release.yml` tests, builds and publishes a GitHub release with the binary and its sha256. A tag with a hyphen, such as `v1.0.0-rc1`, is published as a prerelease.
+
+```sh
+git tag v1.0.0 && git push origin v1.0.0
+```
 
 The design and implementation plan are in `docs/superpowers/`.

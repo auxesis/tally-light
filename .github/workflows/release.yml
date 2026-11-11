@@ -1,0 +1,89 @@
+name: Release
+
+# Pushing a version tag (v1.2.3) tests, builds and publishes a GitHub release
+# with a macOS arm64 binary and its sha256. A tag with a hyphen (v1.2.3-rc1)
+# is published as a prerelease. Release notes are generated from the commits
+# since the previous tag.
+#
+# The build runs on macOS because the camera and power packages use cgo. The
+# asset name has no version in it so that
+# releases/latest/download/tally-light-darwin-arm64.tar.gz always points at
+# the newest release.
+
+on:
+  push:
+    tags: ["v*"]
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: macos-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      # Passed through env, not interpolated into scripts.
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
+        with:
+          version: 2026.4.0
+          install: true
+          install_args: go
+          cache: true
+          cache_key_prefix: mise-v1-macos
+
+      - name: Test
+        run: mise run test
+
+      - name: Build
+        run: VERSION="$TAG" mise run build
+
+      # Fail by name if the version stamp didn't take, rather than ship a
+      # binary that reports "dev".
+      - name: Binary reports the tag's version
+        run: |
+          got=$(./tally-light version)
+          if [ "$got" != "tally-light $TAG" ]; then
+            echo "::error::binary says '$got', want 'tally-light $TAG'"
+            exit 1
+          fi
+          file tally-light
+
+      - name: Package
+        run: |
+          mkdir dist
+          tar -czf dist/tally-light-darwin-arm64.tar.gz tally-light README.md
+          (cd dist && shasum -a 256 tally-light-darwin-arm64.tar.gz > tally-light-darwin-arm64.tar.gz.sha256)
+          cat dist/*.sha256
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=()
+          if [[ "$TAG" == *-* ]]; then
+            prerelease=(--prerelease)
+          fi
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "$TAG" \
+            --generate-notes \
+            "${prerelease[@]}" \
+            dist/*
