@@ -181,6 +181,16 @@ Common problems:
   - The service must run as a real user account (tested with an admin account), not a system account like `nobody`.
 - **The lamp stays purple in the morning.** Camera changes before `active_from_hour` are ignored.
 
+## Uninstall
+
+```sh
+sudo tally-light uninstall
+brew uninstall tally-light  # if installed with Homebrew
+rm -r ~/.config/tally-light ~/Library/Logs/tally-light.log
+```
+
+The lamp is left yellow.
+
 ## Why a LaunchDaemon?
 
 These were tested on macOS 26 while designing the tool. Each row was tested directly.
@@ -194,16 +204,6 @@ These were tested on macOS 26 while designing the tool. Each row was tested dire
 Since macOS 15, Local Network privacy blocks background programs started from a LaunchAgent from reaching devices on your network. A plain command-line binary can't be listed under System Settings → Privacy & Security → Local Network, so there's nothing to approve. LaunchDaemons aren't subject to this.
 
 tally-light never runs as root. launchd starts it as your user account.
-
-## Uninstall
-
-```sh
-sudo tally-light uninstall
-brew uninstall tally-light  # if installed with Homebrew
-rm -r ~/.config/tally-light ~/Library/Logs/tally-light.log
-```
-
-The lamp is left yellow.
 
 ## Development
 
