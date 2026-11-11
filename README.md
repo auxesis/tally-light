@@ -23,34 +23,22 @@ If the bridge can't be reached, for example because you're away from home, the c
 ## Requirements
 
 - macOS on Apple Silicon. Developed on macOS 26.
+- [Homebrew](https://brew.sh).
 - A Philips Hue bridge on your local network, plus a bridge username (see below).
 - A real user account to run the service as. It has been tested with an admin account. The system account `nobody` sees no cameras, and a standard (non-admin) account hasn't been tested yet.
-- To build from source: Go 1.26 and the Xcode Command Line Tools (cgo is used to call macOS frameworks). See [Building from source](#building-from-source).
 
 ## Install
 
-1. Install with Homebrew:
+1. Install with [Homebrew](https://brew.sh):
 
    ```sh
    brew install auxesis/tap/tally-light
    ```
 
-   Or download the latest release, check it, and unpack it:
-
-   ```sh
-   curl -fsSLO https://github.com/auxesis/tally-light/releases/latest/download/tally-light-darwin-arm64.tar.gz
-   curl -fsSLO https://github.com/auxesis/tally-light/releases/latest/download/tally-light-darwin-arm64.tar.gz.sha256
-   shasum -a 256 -c tally-light-darwin-arm64.tar.gz.sha256
-   tar -xzf tally-light-darwin-arm64.tar.gz
-   ```
-
-   The binary isn't signed by an Apple developer account. Downloading with `curl` as above works. If you download it in a browser instead, macOS will refuse to run it until you clear the quarantine flag: `xattr -d com.apple.quarantine tally-light`.
-
 2. Find the name of your camera:
 
    ```sh
-   tally-light list-cameras    # Homebrew
-   ./tally-light list-cameras  # download
+   tally-light list-cameras
    ```
 
    ```
@@ -58,41 +46,43 @@ If the bridge can't be reached, for example because you're away from home, the c
    MacBook Air Camera	6C707041-05AC-0011-0004-000000000001	not in use
    ```
 
-   Use the name (first column) in the config. The unique ID (second column) of a USB camera changes when you plug it into a different port.
+3. Write `~/.config/tally-light/config.toml` with that camera name and your bridge details (see [Configuration](#configuration)).
 
-3. Write the config file at `~/.config/tally-light/config.toml` (see [Configuration](#configuration)).
-
-4. Install and start the service:
+4. Start the service:
 
    ```sh
-   sudo /opt/homebrew/opt/tally-light/bin/tally-light install  # Homebrew
-   sudo ./tally-light install                                  # download
+   sudo "$(brew --prefix)/bin/tally-light" install
    ```
 
-   A Homebrew install runs in place, from Homebrew's own path. A downloaded binary is copied to `/usr/local/bin/tally-light`. Either way, `install` writes `/Library/LaunchDaemons/com.auxesis.tally-light.plist` to run it as the user who ran `sudo`, and starts it. The config is checked first, and `install` refuses to continue if it's invalid.
+   The lamp turns purple, then green.
 
-   The lamp should turn purple, then green. From here on, `tally-light` is on your `PATH`.
+To upgrade, run `brew upgrade tally-light`. The service restarts on the new version by itself.
 
-To upgrade:
+<details>
+<summary>Install without Homebrew</summary>
 
-- **Homebrew:** `brew upgrade tally-light`. The service notices the new version and restarts on it.
-- **Download:** download the new release and run `sudo ./tally-light install` again. It replaces the binary and restarts the service.
-
-### Building from source
-
-Instead of downloading a release, build it with Go 1.26 and the Xcode Command Line Tools:
+Download the latest release, check it, and unpack it:
 
 ```sh
-go install github.com/auxesis/tally-light@latest
+curl -fsSLO https://github.com/auxesis/tally-light/releases/latest/download/tally-light-darwin-arm64.tar.gz
+curl -fsSLO https://github.com/auxesis/tally-light/releases/latest/download/tally-light-darwin-arm64.tar.gz.sha256
+shasum -a 256 -c tally-light-darwin-arm64.tar.gz.sha256
+tar -xzf tally-light-darwin-arm64.tar.gz
 ```
 
-Or from a checkout, with [mise](https://mise.jdx.dev):
+The binary isn't signed by an Apple developer account. Downloading with `curl` as above works. If you download it in a browser instead, macOS will refuse to run it until you clear the quarantine flag: `xattr -d com.apple.quarantine tally-light`.
+
+Or build it from source, with Go 1.26 and the Xcode Command Line Tools:
 
 ```sh
-mise run build
+go install github.com/auxesis/tally-light@latest  # or, from a checkout: mise run build
 ```
 
-Then continue from step 2.
+Then follow steps 2 to 4 above, running `./tally-light` instead of `tally-light`, and `sudo ./tally-light install` to start the service. `install` copies the binary to `/usr/local/bin/tally-light`, so from then on `tally-light` is on your `PATH`.
+
+To upgrade, get the new binary the same way and run `sudo ./tally-light install` again. It replaces the binary and restarts the service.
+
+</details>
 
 ## Configuration
 
