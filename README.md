@@ -1,13 +1,13 @@
 # `tally-light`
 
-Turns a Philips Hue lamp red while your webcam is in use, and green when it isn't, so the people around you know when you're on a call.
+Turns a Philips Hue light red while your webcam is in use, and green when it isn't, so the people around you know when you're on a call.
 
 Runs as you as a background system service.
 
 ## How it works
 
-- **Watch the camera.** `tally-light` asks macOS whether a camera is in use. It works with any camera macOS knows about: USB webcams, the built-in camera, or Continuity Camera. Only the camera you configure affects the lamp.
-- **Change the lamp.** It talks to the Hue bridge directly over its local HTTP API.
+- **Watch the camera.** `tally-light` asks macOS whether a camera is in use. It works with any camera macOS knows about: USB webcams, the built-in camera, or Continuity Camera. Only the camera you configure affects the light.
+- **Change the light.** It talks to the Hue bridge directly over its local HTTP API.
 - **Run in the background.** It [runs as a LaunchDaemon](#why-a-launchdaemon) that launchd starts as your user account.
 
 | Event | Light colour |
@@ -176,14 +176,14 @@ launchctl print system/com.auxesis.tally-light | grep -E 'state|username|last ex
 
 Common problems:
 
-- **The lamp never changes, and the log shows `lamp update failed: ... no route to host`.**
+- **The light never changes, and the log shows `light update failed: ... no route to host`.**
   - Check `bridge.host`.
   - If you've installed it some other way, as a LaunchAgent in `~/Library/LaunchAgents`, macOS blocks it from your local network. Use `sudo tally-light install`.
 - **The camera is never seen as in use.**
   - Compare the `camera` setting with `tally-light list-cameras`. Names must match exactly.
   - If you set `camera_uid` for a USB camera, it may have changed after moving the camera to another USB port. Switch to `camera` (the name).
   - The service must run as a real user account (tested with an admin account), not a system account like `nobody`.
-- **The lamp stays purple in the morning.** Camera changes before `active_from_hour` are ignored.
+- **The light stays purple in the morning.** Camera changes before `active_from_hour` are ignored.
 
 ## Uninstall
 

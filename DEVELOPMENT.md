@@ -23,13 +23,13 @@ Tests that need a real camera are skipped by default. To run the one that watche
 TALLY_MANUAL=1 go test ./internal/camera/ -run TestWatchSeesCameraUse -v
 ```
 
-To try a change against your lamp without installing the service, run it in the foreground (Ctrl-C stops it and leaves the lamp yellow):
+To try a change against your light without installing the service, run it in the foreground (Ctrl-C stops it and leaves the light yellow):
 
 ```sh
 go run . run
 ```
 
-If the service is installed, it sets the lamp too. Pause it while you test, and start it again after:
+If the service is installed, it sets the light too. Pause it while you test, and start it again after:
 
 ```sh
 sudo launchctl bootout system/com.auxesis.tally-light
@@ -40,7 +40,7 @@ sudo launchctl bootstrap system /Library/LaunchDaemons/com.auxesis.tally-light.p
 
 | Package | Purpose |
 |---|---|
-| `internal/tally` | Decides the lamp colour (pure Go, fully unit-tested) |
+| `internal/tally` | Decides the light colour (pure Go, fully unit-tested) |
 | `internal/camera` | CoreMediaIO camera list and change notifications (cgo) |
 | `internal/power` | Sleep/wake notifications (cgo) |
 | `internal/hue` | Hue bridge client |
