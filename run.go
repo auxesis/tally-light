@@ -13,6 +13,7 @@ import (
 	"github.com/auxesis/tally-light/internal/config"
 	"github.com/auxesis/tally-light/internal/hue"
 	"github.com/auxesis/tally-light/internal/power"
+	"github.com/auxesis/tally-light/internal/service"
 	"github.com/auxesis/tally-light/internal/tally"
 )
 
@@ -70,6 +71,13 @@ func run(args []string) {
 		logger.Printf("sleep/wake notifications unavailable: %v", err)
 	}
 
+	// After `brew upgrade`, exit so launchd (KeepAlive) restarts the service
+	// on the new version.
+	var upgrade *service.Upgrade
+	if self, err := os.Executable(); err == nil {
+		upgrade = service.WatchUpgrade(self)
+	}
+
 	var listFailing bool
 	observe := func() {
 		cams, err := camera.List()
@@ -92,6 +100,10 @@ func run(args []string) {
 		case <-changes:
 			observe()
 		case <-ticker.C:
+			if upgrade != nil && upgrade.Happened() {
+				logger.Print("binary upgraded, exiting to restart on the new version")
+				return
+			}
 			observe()
 		case n := <-notices:
 			if n.Event == power.WillSleep {

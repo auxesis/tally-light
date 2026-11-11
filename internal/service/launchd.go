@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -50,11 +51,12 @@ const plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 </plist>
 `
 
-// Plist returns the LaunchDaemon definition for user, whose home is home.
-func Plist(user, home string) []byte {
+// Plist returns the LaunchDaemon definition that runs bin as user, whose
+// home is home.
+func Plist(bin, user, home string) []byte {
 	logPath := filepath.Join(home, "Library", "Logs", "tally-light.log")
 	return fmt.Appendf(nil, plistTemplate,
-		esc(Label), esc(user), esc(BinPath), esc(home), esc(logPath))
+		esc(Label), esc(user), esc(bin), esc(home), esc(logPath))
 }
 
 func esc(s string) string {
@@ -63,13 +65,56 @@ func esc(s string) string {
 	return b.String()
 }
 
-// Install copies the binary at self to BinPath, writes the LaunchDaemon and
-// (re)loads it. Must run as root.
-func Install(self, user, home string) error {
-	if err := copyBinary(self, BinPath); err != nil {
-		return fmt.Errorf("installing binary: %w", err)
+// Target decides which binary the service runs, given the path this program
+// was started from. A Homebrew install runs from Homebrew's opt path, which
+// follows upgrades; anything else is copied to BinPath.
+func Target(self string) (bin string, copyIt bool, err error) {
+	real, err := filepath.EvalSymlinks(self)
+	if err != nil {
+		return "", false, err
 	}
-	if err := writeRootFile(PlistPath, Plist(user, home), 0o644); err != nil {
+	if prefix, _, ok := strings.Cut(real, "/Cellar/tally-light/"); ok {
+		return filepath.Join(prefix, "opt", "tally-light", "bin", "tally-light"), false, nil
+	}
+	return BinPath, true, nil
+}
+
+// Upgrade notices when the binary at a path is replaced by a new version,
+// as when Homebrew repoints its opt symlink.
+type Upgrade struct {
+	self, started string
+}
+
+// WatchUpgrade records which binary self currently resolves to.
+func WatchUpgrade(self string) *Upgrade {
+	started, _ := filepath.EvalSymlinks(self)
+	return &Upgrade{self: self, started: started}
+}
+
+// Happened reports whether self now resolves to a different binary. A path
+// that doesn't resolve, as briefly during an upgrade, is not an upgrade.
+func (u *Upgrade) Happened() bool {
+	now, err := filepath.EvalSymlinks(u.self)
+	return err == nil && u.started != "" && now != u.started
+}
+
+// Install writes the LaunchDaemon and (re)loads it, first copying the binary
+// at self to BinPath unless it is a Homebrew install. Must run as root.
+func Install(self, user, home string) error {
+	bin, copyIt, err := Target(self)
+	if err != nil {
+		return fmt.Errorf("finding own binary: %w", err)
+	}
+	if copyIt {
+		if err := copyBinary(self, BinPath); err != nil {
+			return fmt.Errorf("installing binary: %w", err)
+		}
+	} else if err := os.Remove(BinPath); err != nil && !os.IsNotExist(err) {
+		// A copy left by an earlier non-Homebrew install would shadow
+		// Homebrew's on PATH.
+		return fmt.Errorf("removing old %s: %w", BinPath, err)
+	}
+	if err := writeRootFile(PlistPath, Plist(bin, user, home), 0o644); err != nil {
 		return fmt.Errorf("writing %s: %w", PlistPath, err)
 	}
 	// Fails when the service isn't loaded yet, which is fine.
@@ -77,7 +122,6 @@ func Install(self, user, home string) error {
 
 	// bootout finishes asynchronously; bootstrap can fail briefly after it.
 	var out []byte
-	var err error
 	for range 5 {
 		out, err = exec.Command("launchctl", "bootstrap", "system", PlistPath).CombinedOutput()
 		if err == nil {
