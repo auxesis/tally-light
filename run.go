@@ -26,8 +26,8 @@ func run(args []string) {
 	_ = fs.Parse(args) // ExitOnError: Parse exits rather than returning an error
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 
-	// Validate before touching the lamp, so a bad config under launchd's
-	// restart loop can't make the lamp flicker.
+	// Validate before touching the light, so a bad config under launchd's
+	// restart loop can't make the light flicker.
 	cfg, err := config.Load(*path)
 	if err != nil {
 		logger.Print(err)
@@ -38,12 +38,12 @@ func run(args []string) {
 		c, _ := hue.ParseColour(name) // validated by config.Load
 		return c
 	}
-	lamp := hue.Light{
+	light := hue.Light{
 		Client:     hue.NewClient(cfg.Bridge.Host, cfg.Bridge.Username),
 		ID:         cfg.Light.ID,
 		Brightness: uint8(cfg.Light.Brightness), //nolint:gosec // config.Load checks it is 1-254
 	}
-	ctrl := tally.New(lamp, tally.Colours{
+	ctrl := tally.New(light, tally.Colours{
 		Starting: colour(cfg.Colours.Starting),
 		InUse:    colour(cfg.Colours.InUse),
 		NotInUse: colour(cfg.Colours.NotInUse),

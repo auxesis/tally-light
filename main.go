@@ -1,4 +1,4 @@
-// Command tally-light turns a Hue lamp red while a chosen camera is in use.
+// Command tally-light turns a Hue light red while a chosen camera is in use.
 package main
 
 import (
