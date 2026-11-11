@@ -25,35 +25,25 @@ If the bridge can't be reached, for example because you're away from home, the c
 - macOS on Apple Silicon. Developed on macOS 26.
 - A Philips Hue bridge on your local network, plus a bridge username (see below).
 - A real user account to run the service as. It has been tested with an admin account. The system account `nobody` sees no cameras, and a standard (non-admin) account hasn't been tested yet.
-- To build it: Go 1.26 and the Xcode Command Line Tools (cgo is used to call macOS frameworks).
+- To build from source: Go 1.26 and the Xcode Command Line Tools (cgo is used to call macOS frameworks). See [Building from source](#building-from-source).
 
 ## Install
 
-1. Download the latest release:
+1. Download the latest release, check it, and unpack it:
 
    ```sh
    curl -fsSLO https://github.com/auxesis/tally-light/releases/latest/download/tally-light-darwin-arm64.tar.gz
+   curl -fsSLO https://github.com/auxesis/tally-light/releases/latest/download/tally-light-darwin-arm64.tar.gz.sha256
+   shasum -a 256 -c tally-light-darwin-arm64.tar.gz.sha256
    tar -xzf tally-light-darwin-arm64.tar.gz
    ```
 
    The binary isn't signed by an Apple developer account. Downloading with `curl` as above works. If you download it in a browser instead, macOS will refuse to run it until you clear the quarantine flag: `xattr -d com.apple.quarantine tally-light`.
 
-   Or install with Go:
-
-   ```sh
-   go install github.com/auxesis/tally-light@latest
-   ```
-
-   Or from a checkout:
-
-   ```sh
-   go build -o tally-light .
-   ```
-
 2. Find the name of your camera:
 
    ```sh
-   tally-light list-cameras
+   ./tally-light list-cameras
    ```
 
    ```
@@ -68,12 +58,30 @@ If the bridge can't be reached, for example because you're away from home, the c
 4. Install and start the service:
 
    ```sh
-   sudo tally-light install
+   sudo ./tally-light install
    ```
 
    This copies the binary to `/usr/local/bin/tally-light`, writes `/Library/LaunchDaemons/com.auxesis.tally-light.plist` to run it as the user who ran `sudo`, and starts it. The config is checked first, and `install` refuses to continue if it's invalid.
 
-   The lamp should turn purple, then green.
+   The lamp should turn purple, then green. From here on, `tally-light` is on your `PATH`.
+
+To upgrade, download the new release and run `sudo ./tally-light install` again. It replaces the binary and restarts the service.
+
+### Building from source
+
+Instead of downloading a release, build it with Go 1.26 and the Xcode Command Line Tools:
+
+```sh
+go install github.com/auxesis/tally-light@latest
+```
+
+Or from a checkout, with [mise](https://mise.jdx.dev):
+
+```sh
+mise run build
+```
+
+Then continue from step 2.
 
 ## Configuration
 
@@ -212,3 +220,7 @@ git tag v1.0.0 && git push origin v1.0.0
 ```
 
 The design and implementation plan are in `docs/superpowers/`.
+
+## License
+
+MIT. See [LICENSE.md](LICENSE.md).

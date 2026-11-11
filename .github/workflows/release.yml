@@ -1,7 +1,7 @@
 name: Release
 
 # Pushing a version tag (v1.2.3) tests, builds and publishes a GitHub release
-# with a macOS arm64 binary and its sha256. A tag with a hyphen (v1.2.3-rc1)
+# with a macOS arm64 binary (plus README and LICENSE) and its sha256. A tag with a hyphen (v1.2.3-rc1)
 # is published as a prerelease. Release notes are generated from the commits
 # since the previous tag.
 #
@@ -68,7 +68,7 @@ jobs:
       - name: Package
         run: |
           mkdir dist
-          tar -czf dist/tally-light-darwin-arm64.tar.gz tally-light README.md
+          tar -czf dist/tally-light-darwin-arm64.tar.gz tally-light README.md LICENSE.md
           (cd dist && shasum -a 256 tally-light-darwin-arm64.tar.gz > tally-light-darwin-arm64.tar.gz.sha256)
           cat dist/*.sha256
 
