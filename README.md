@@ -61,6 +61,8 @@ To upgrade, run `brew upgrade tally-light`. The service restarts on the new vers
 <details>
 <summary>Install without Homebrew</summary>
 
+### Download a release
+
 Download the latest release, check it, and unpack it:
 
 ```sh
@@ -72,13 +74,20 @@ tar -xzf tally-light-darwin-arm64.tar.gz
 
 The binary isn't signed by an Apple developer account. Downloading with `curl` as above works. If you download it in a browser instead, macOS will refuse to run it until you clear the quarantine flag: `xattr -d com.apple.quarantine tally-light`.
 
-Or build it from source, with Go 1.26 and the Xcode Command Line Tools:
+### Build from source
+
+You need the Xcode Command Line Tools and [mise](https://mise.jdx.dev), which installs the pinned Go version:
 
 ```sh
-go install github.com/auxesis/tally-light@latest  # or, from a checkout: mise run build
+git clone https://github.com/auxesis/tally-light.git
+cd tally-light
+mise install
+mise run build
 ```
 
-Then follow steps 2 to 4 above, running `./tally-light` instead of `tally-light`, and `sudo ./tally-light install` to start the service. `install` copies the binary to `/usr/local/bin/tally-light`, so from then on `tally-light` is on your `PATH`.
+### Finish installing
+
+Either way, you now have `./tally-light`. Follow steps 2 to 4 above, running `./tally-light` instead of `tally-light`, and `sudo ./tally-light install` to start the service. `install` copies the binary to `/usr/local/bin/tally-light`, so from then on `tally-light` is on your `PATH`.
 
 To upgrade, get the new binary the same way and run `sudo ./tally-light install` again. It replaces the binary and restarts the service.
 
