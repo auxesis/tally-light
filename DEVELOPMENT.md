@@ -47,6 +47,8 @@ sudo launchctl bootstrap system /Library/LaunchDaemons/com.auxesis.tally-light.p
 | `internal/config` | Config loading and validation |
 | `internal/service` | LaunchDaemon install and uninstall |
 
+To tell whether a camera is in use, `internal/camera` uses the public CoreMediaIO API: it lists devices (`kCMIOHardwarePropertyDevices`), reads each one's name and unique ID, and asks whether it is running in any app (`kCMIODevicePropertyDeviceIsRunningSomewhere`). Property listeners report changes straight away, and `run` also polls every 2 seconds in case a notification is missed.
+
 ## CI
 
 CI (`.github/workflows/tests.yml`) runs `mise run test` and `mise run lint` on macOS.

@@ -1,16 +1,16 @@
-# tally-light
+# `tally-light`
 
 Turns a Philips Hue lamp red while your webcam is in use, and green when it isn't, so the people around you know when you're on a call.
 
-It's a single binary for macOS that runs in the background as a system service. It doesn't need a terminal open, and it has no runtime dependencies.
+Runs as you as a background system service.
 
 ## How it works
 
-- **Watching the camera.** tally-light asks macOS (through CoreMediaIO) whether a named camera is in use. It works with any camera macOS knows about: USB webcams, the built-in camera, or Continuity Camera. Only the camera you configure affects the lamp, so a desk webcam doubles as an "I'm at my desk" signal.
-- **Setting the lamp.** It talks to the Hue bridge directly over its local HTTP API.
-- **Running in the background.** It runs as a LaunchDaemon that launchd starts as your user account. See [Why a LaunchDaemon?](#why-a-launchdaemon) below.
+- **Watch the camera.** `tally-light` asks macOS whether a camera is in use. It works with any camera macOS knows about: USB webcams, the built-in camera, or Continuity Camera. Only the camera you configure affects the lamp.
+- **Change the lamp.** It talks to the Hue bridge directly over its local HTTP API.
+- **Run in the background.** It [runs as a LaunchDaemon](#why-a-launchdaemon) that launchd starts as your user account.
 
-| Event | Lamp |
+| Event | Light colour |
 |---|---|
 | Service starts | purple |
 | Camera in use | red |
@@ -18,11 +18,11 @@ It's a single binary for macOS that runs in the background as a system service. 
 | Mac about to sleep | green |
 | Service stops | yellow |
 
-If the bridge can't be reached, for example because you're away from home, the change is skipped and logged once. tally-light keeps running and catches up when the bridge comes back.
+If the bridge can't be reached, for example because you're away from home, the change is skipped and logged once. `tally-light` keeps running and catches up when the bridge comes back.
 
 ## Requirements
 
-- macOS on Apple Silicon. Developed on macOS 26.
+- macOS on Apple Silicon. Tested on macOS 26.
 - [Homebrew](https://brew.sh).
 - A Philips Hue bridge on your local network, plus a bridge username (see below).
 - A real user account to run the service as. It has been tested with an admin account. The system account `nobody` sees no cameras, and a standard (non-admin) account hasn't been tested yet.
@@ -54,7 +54,7 @@ If the bridge can't be reached, for example because you're away from home, the c
    sudo "$(brew --prefix)/bin/tally-light" install
    ```
 
-   The lamp turns purple, then green.
+   The light turns purple, then green.
 
 To upgrade, run `brew upgrade tally-light`. The service restarts on the new version by itself.
 
@@ -125,7 +125,11 @@ id = 16            # from the Hue app, or GET /api/<username>/lights
 # stopped = "yellow"
 ```
 
-Keep the file readable only by you (`chmod 600`), because the bridge username works as a password.
+Because the bridge username works as a password, keep the configuration file readable only by you (`chmod 600`).
+
+```sh
+chmod 600 ~/.config/tally-light/config.toml
+```
 
 The service reads the config when it starts. After editing it, restart the service:
 
@@ -135,7 +139,7 @@ sudo launchctl kickstart -k system/com.auxesis.tally-light
 
 ### Getting a bridge username
 
-1. Press the link button on the bridge.
+1. Press the link button on the Hue bridge.
 2. Within 30 seconds, run:
 
    ```sh
@@ -177,7 +181,7 @@ Common problems:
   - If you've installed it some other way, as a LaunchAgent in `~/Library/LaunchAgents`, macOS blocks it from your local network. Use `sudo tally-light install`.
 - **The camera is never seen as in use.**
   - Compare the `camera` setting with `tally-light list-cameras`. Names must match exactly.
-  - If you set `camera_uid` for a USB camera, it may have changed after moving the camera to another port. Switch to `camera` (the name).
+  - If you set `camera_uid` for a USB camera, it may have changed after moving the camera to another USB port. Switch to `camera` (the name).
   - The service must run as a real user account (tested with an admin account), not a system account like `nobody`.
 - **The lamp stays purple in the morning.** Camera changes before `active_from_hour` are ignored.
 
@@ -189,11 +193,11 @@ brew uninstall tally-light  # if installed with Homebrew
 rm -r ~/.config/tally-light ~/Library/Logs/tally-light.log
 ```
 
-The lamp is left yellow.
+The light changes to yellow before the service stops.
 
 ## Why a LaunchDaemon?
 
-These were tested on macOS 26 while designing the tool. Each row was tested directly.
+These were tested on macOS 26 while designing the tool.
 
 | Runs as | Reaches Hue bridge | Sees camera state |
 |---|---|---|
@@ -201,9 +205,9 @@ These were tested on macOS 26 while designing the tool. Each row was tested dire
 | LaunchDaemon with `UserName` = an admin user | Yes | Yes |
 | LaunchDaemon with `UserName` = `nobody` | Yes | No |
 
-Since macOS 15, Local Network privacy blocks background programs started from a LaunchAgent from reaching devices on your network. A plain command-line binary can't be listed under System Settings → Privacy & Security → Local Network, so there's nothing to approve. LaunchDaemons aren't subject to this.
+Since macOS 15, Local Network privacy blocks background programs started from a LaunchAgent from reaching devices on your network. A plain command-line binary can't be listed under *System Settings* → *Privacy & Security* → *Local Network*, so there's nothing to approve. LaunchDaemons aren't subject to this.
 
-tally-light never runs as root. launchd starts it as your user account.
+`tally-light` never runs as root. launchd starts it as your user account.
 
 ## Development
 
