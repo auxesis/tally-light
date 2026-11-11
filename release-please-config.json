@@ -5,8 +5,7 @@
       "release-type": "go",
       "package-name": "tally-light",
       "include-component-in-tag": false,
-      "initial-version": "0.1.0",
-      "bump-minor-pre-major": true
+      "initial-version": "1.0.0"
     }
   }
 }
