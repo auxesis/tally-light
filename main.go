@@ -8,6 +8,7 @@ import (
 
 	"github.com/auxesis/tally-light/internal/camera"
 	"github.com/auxesis/tally-light/internal/config"
+	"github.com/auxesis/tally-light/internal/mainloop"
 	"github.com/auxesis/tally-light/internal/service"
 )
 
@@ -25,7 +26,8 @@ func main() {
 	case "list-cameras":
 		listCameras()
 	case "run":
-		run(os.Args[2:])
+		// The run loop lets CoreMediaIO list cameras plugged in later.
+		mainloop.Run(func() { run(os.Args[2:]) })
 	case "install":
 		install()
 	case "uninstall":

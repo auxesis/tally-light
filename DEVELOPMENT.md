@@ -23,6 +23,12 @@ Tests that need a real camera are skipped by default. To run the one that watche
 TALLY_MANUAL=1 go test ./internal/camera/ -run TestWatchSeesCameraUse -v
 ```
 
+To check that a camera plugged in later is listed, unplug a USB camera and run this test. Plug the camera in when the test asks:
+
+```sh
+TALLY_MANUAL=1 go test ./internal/camera/ -run TestListSeesCameraPluggedIn -v
+```
+
 To try a change against your light without installing the service, run it in the foreground (Ctrl-C stops it and leaves the light yellow):
 
 ```sh
@@ -43,11 +49,14 @@ sudo launchctl bootstrap system /Library/LaunchDaemons/com.auxesis.tally-light.p
 | `internal/tally` | Decides the light colour (pure Go, fully unit-tested) |
 | `internal/camera` | CoreMediaIO camera list and change notifications (cgo) |
 | `internal/power` | Sleep/wake notifications (cgo) |
+| `internal/mainloop` | Runs the macOS run loop on the main thread (cgo) |
 | `internal/hue` | Hue bridge client |
 | `internal/config` | Config loading and validation |
 | `internal/service` | LaunchDaemon install and uninstall |
 
-To tell whether a camera is in use, `internal/camera` uses the public CoreMediaIO API: it lists devices (`kCMIOHardwarePropertyDevices`), reads each one's name and unique ID, and asks whether it is running in any app (`kCMIODevicePropertyDeviceIsRunningSomewhere`). Property listeners report changes straight away, and `run` also polls every 2 seconds in case a notification is missed.
+To tell whether a camera is in use, `internal/camera` uses the public CoreMediaIO API. It lists devices with `kCMIOHardwarePropertyDevices`, and reads each one's name and unique ID. Then it asks whether each device is running in any app, with `kCMIODevicePropertyDeviceIsRunningSomewhere`. Property listeners report changes straight away, and `run` also polls every 2 seconds in case a notification is missed.
+
+CoreMediaIO updates a process's device list only through the main thread's run loop. Without one, `run` would never list a camera that was plugged in after it started. So `run` uses `internal/mainloop` to run the run loop on the main thread. Its own work runs on another goroutine.
 
 ## CI
 
