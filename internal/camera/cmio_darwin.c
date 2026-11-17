@@ -17,8 +17,10 @@ static const CMIOObjectPropertyAddress runningAddr = {
 	kCMIODevicePropertyDeviceIsRunningSomewhere, kCMIOObjectPropertyScopeWildcard, kCMIOObjectPropertyElementWildcard};
 
 // setup includes extension-based devices and creates the queue listener
-// blocks run on. Listeners are delivered on that queue, so no run loop is
-// needed on the Go main thread.
+// blocks run on. Listener blocks run on that queue. But CoreMediaIO updates
+// the device list only through the main thread's run loop. So a long-running
+// process must run one, or it never sees cameras plugged in after it starts:
+// see internal/mainloop.
 static void setup(void) {
 	static dispatch_once_t once;
 	dispatch_once(&once, ^{
