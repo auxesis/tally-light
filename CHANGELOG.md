@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/auxesis/tally-light/compare/v1.0.0...v1.0.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* list cameras plugged in after the service starts ([d395992](https://github.com/auxesis/tally-light/commit/d3959921a16f605c8ccdf38e3feb507599f4f284))
+* list cameras plugged in after the service starts ([#2](https://github.com/auxesis/tally-light/issues/2)) ([2a6721c](https://github.com/auxesis/tally-light/commit/2a6721c453b54559f9bd2efb881b74e5ab3046f0))
+
 ## 1.0.0 (2026-11-11)
 
 
